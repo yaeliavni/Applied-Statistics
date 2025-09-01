@@ -1,0 +1,1644 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Enhanced HMC Laboratory + Interactive Charts</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg,#1e3c72 0%,#2a5298 50%,#667eea 100%);
+            color: #fff;
+            min-height: 100vh;
+            overflow-x: auto
+        }
+
+        .container {
+            max-width: 1600px;
+            margin: 20px auto 40px;
+            background: rgba(255,255,255,.05);
+            border-radius: 20px;
+            padding: 20px;
+            backdrop-filter: blur(15px);
+            box-shadow: 0 20px 60px rgba(0,0,0,.4);
+            border: 1px solid rgba(255,255,255,.1)
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 30px
+        }
+
+        .main-title {
+            font-size: 2.8em;
+            font-weight: 700;
+            background: linear-gradient(45deg,#ff6b6b,#4ecdc4,#45b7d1);
+            background-size: 200% 200%;
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            animation: gradient 3s ease infinite;
+            text-shadow: 2px 2px 4px rgba(0,0,0,.3);
+            margin-bottom: 10px
+        }
+
+        @keyframes gradient {
+            0% {
+                background-position: 0% 50%
+            }
+
+            50% {
+                background-position: 100% 50%
+            }
+
+            100% {
+                background-position: 0% 50%
+            }
+        }
+
+        .subtitle {
+            font-size: 1.3em;
+            opacity: .9;
+            margin-bottom: 20px
+        }
+
+        /* mode buttons (now includes python) */
+        .mode-selector {
+            display: flex;
+            justify-content: center;
+            gap: 15px;
+            margin-bottom: 20px;
+            flex-wrap: wrap
+        }
+
+        .mode-btn {
+            padding: 12px 25px;
+            border: none;
+            border-radius: 25px;
+            cursor: pointer;
+            font-weight: 600;
+            transition: .3s;
+            position: relative;
+            overflow: hidden
+        }
+
+            .mode-btn.active {
+                background: linear-gradient(45deg,#ff6b6b,#ee5a24);
+                color: #fff;
+                transform: scale(1.05);
+                box-shadow: 0 8px 25px rgba(255,107,107,.4)
+            }
+
+            .mode-btn:not(.active) {
+                background: rgba(255,255,255,.1);
+                color: #fff;
+                border: 1px solid rgba(255,255,255,.3)
+            }
+
+            .mode-btn:hover {
+                transform: translateY(-2px);
+                box-shadow: 0 10px 30px rgba(0,0,0,.2)
+            }
+
+        .controls-panel {
+            display: grid;
+            grid-template-columns: repeat(auto-fit,minmax(220px,1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+            padding: 20px;
+            background: rgba(255,255,255,.05);
+            border-radius: 15px;
+            border: 1px solid rgba(255,255,255,.1)
+        }
+
+        .control-group {
+            display: flex;
+            flex-direction: column;
+            gap: 10px
+        }
+
+            .control-group label {
+                font-weight: 600;
+                font-size: .9em;
+                opacity: .9
+            }
+
+        .slider-container {
+            position: relative
+        }
+
+        .slider {
+            width: 100%;
+            height: 6px;
+            border-radius: 3px;
+            background: rgba(255,255,255,.2);
+            outline: none;
+            -webkit-appearance: none
+        }
+
+            .slider::-webkit-slider-thumb {
+                -webkit-appearance: none;
+                width: 20px;
+                height: 20px;
+                border-radius: 50%;
+                background: linear-gradient(45deg,#4ecdc4,#44bd87);
+                cursor: pointer;
+                box-shadow: 0 2px 10px rgba(0,0,0,.3)
+            }
+
+            .slider::-moz-range-thumb {
+                width: 20px;
+                height: 20px;
+                border-radius: 50%;
+                background: linear-gradient(45deg,#4ecdc4,#44bd87);
+                cursor: pointer;
+                box-shadow: 0 2px 10px rgba(0,0,0,.3);
+                border: none
+            }
+
+        .slider-value {
+            position: absolute;
+            right: 0;
+            top: -25px;
+            font-size: .8em;
+            background: rgba(0,0,0,.5);
+            padding: 2px 8px;
+            border-radius: 10px
+        }
+
+        .action-buttons {
+            display: flex;
+            justify-content: center;
+            gap: 15px;
+            margin-bottom: 20px;
+            flex-wrap: wrap
+        }
+
+        .btn {
+            padding: 15px 30px;
+            border: none;
+            border-radius: 30px;
+            cursor: pointer;
+            font-size: 16px;
+            font-weight: 600;
+            transition: .3s;
+            position: relative;
+            overflow: hidden;
+            min-width: 150px
+        }
+
+        .btn-primary {
+            background: linear-gradient(45deg,#ff6b6b,#ee5a24);
+            color: #fff;
+            box-shadow: 0 4px 15px rgba(255,107,107,.4)
+        }
+
+        .btn-secondary {
+            background: linear-gradient(45deg,#4ecdc4,#44bd87);
+            color: #fff;
+            box-shadow: 0 4px 15px rgba(78,205,196,.4)
+        }
+
+        .btn-success {
+            background: linear-gradient(45deg,#a8edea,#fed6e3);
+            color: #333;
+            box-shadow: 0 4px 15px rgba(168,237,234,.4)
+        }
+
+        .btn-warning {
+            background: linear-gradient(45deg,#ffeaa7,#fdcb6e);
+            color: #333;
+            box-shadow: 0 4px 15px rgba(255,234,167,.4)
+        }
+
+        .btn:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 8px 25px rgba(0,0,0,.3)
+        }
+
+        .btn:active {
+            transform: translateY(-1px)
+        }
+
+        .main-content {
+            display: grid;
+            grid-template-columns: 2fr 1fr;
+            gap: 20px;
+            margin-bottom: 20px
+        }
+
+        .visualization-area {
+            background: rgba(255,255,255,.05);
+            border-radius: 15px;
+            padding: 20px;
+            border: 1px solid rgba(255,255,255,.1)
+        }
+
+        .canvas-container {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            margin-bottom: 20px
+        }
+
+        .canvas-wrapper {
+            position: relative;
+            background: rgba(0,0,0,.3);
+            border-radius: 10px;
+            padding: 15px;
+            border: 2px solid rgba(255,255,255,.2)
+        }
+
+        .canvas-title {
+            text-align: center;
+            font-weight: 700;
+            margin-bottom: 10px;
+            padding: 8px;
+            background: rgba(255,255,255,.1);
+            border-radius: 8px;
+            font-size: 1.1em
+        }
+
+        canvas {
+            border-radius: 8px;
+            box-shadow: 0 4px 15px rgba(0,0,0,.3);
+            width: 100%;
+            height: auto
+        }
+
+        .stats-panel {
+            display: flex;
+            flex-direction: column;
+            gap: 15px
+        }
+
+        .stats-section {
+            background: rgba(255,255,255,.05);
+            border-radius: 15px;
+            padding: 20px;
+            border: 1px solid rgba(255,255,255,.1)
+        }
+
+        .stats-title {
+            font-size: 1.2em;
+            font-weight: 700;
+            margin-bottom: 15px;
+            text-align: center;
+            color: #4ecdc4
+        }
+
+        .stat-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px
+        }
+
+        .stat-card {
+            background: rgba(255,255,255,.1);
+            padding: 15px;
+            border-radius: 10px;
+            text-align: center;
+            border: 1px solid rgba(255,255,255,.2);
+            transition: transform .3s
+        }
+
+            .stat-card:hover {
+                transform: scale(1.05)
+            }
+
+        .stat-value {
+            font-size: 2em;
+            font-weight: 700;
+            margin-bottom: 5px;
+            background: linear-gradient(45deg,#4ecdc4,#45b7d1);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent
+        }
+
+        .stat-label {
+            font-size: .9em;
+            opacity: .8
+        }
+
+        .efficiency-meter {
+            width: 100%;
+            height: 20px;
+            background: rgba(255,255,255,.1);
+            border-radius: 10px;
+            overflow: hidden;
+            margin: 10px 0
+        }
+
+        .efficiency-fill {
+            height: 100%;
+            transition: width 1s ease
+        }
+
+            .efficiency-fill.random-walk {
+                background: linear-gradient(90deg,#ff6b6b,#ee5a24)
+            }
+
+            .efficiency-fill.hmc {
+                background: linear-gradient(90deg,#4ecdc4,#44bd87)
+            }
+
+        .legend {
+            display: flex;
+            justify-content: center;
+            gap: 20px;
+            margin: 20px 0;
+            flex-wrap: wrap
+        }
+
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 8px 15px;
+            background: rgba(255,255,255,.1);
+            border-radius: 20px;
+            border: 1px solid rgba(255,255,255,.2)
+        }
+
+        .legend-color {
+            width: 16px;
+            height: 16px;
+            border-radius: 50%;
+            border: 2px solid #fff
+        }
+
+        .game-mode {
+            display: none
+        }
+
+            .game-mode.active {
+                display: block
+            }
+
+        .game-stats {
+            text-align: center;
+            font-size: 1.2em;
+            margin: 10px 0
+        }
+
+        .hmc-thinking-panel {
+            background: rgba(255,255,255,.08);
+            border-radius: 15px;
+            padding: 20px;
+            border: 2px solid rgba(78,205,196,.3);
+            margin: 10px 0
+        }
+
+        .thinking-header {
+            text-align: center;
+            font-size: 1.4em;
+            font-weight: 700;
+            color: #4ecdc4;
+            margin-bottom: 20px;
+            text-shadow: 0 0 10px rgba(78,205,196,.5)
+        }
+
+        .thinking-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+            margin-bottom: 20px
+        }
+
+        .thinking-section {
+            background: rgba(255,255,255,.1);
+            border-radius: 10px;
+            padding: 15px;
+            border: 1px solid rgba(255,255,255,.2)
+        }
+
+        .thinking-title {
+            font-weight: 700;
+            color: #4ecdc4;
+            margin-bottom: 8px;
+            font-size: .9em
+        }
+
+        .thinking-section div:not(.thinking-title) {
+            font-family: 'Courier New',monospace;
+            font-size: .85em;
+            line-height: 1.4;
+            color: #e8e8e8
+        }
+
+        .trajectory-preview {
+            background: rgba(0,0,0,.3);
+            border-radius: 10px;
+            padding: 15px;
+            text-align: center;
+            border: 1px solid rgba(255,255,255,.2)
+        }
+
+        .trajectory-title {
+            font-weight: 700;
+            color: #4ecdc4;
+            margin-bottom: 10px
+        }
+
+        #trajectoryCanvas {
+            border-radius: 8px;
+            border: 1px solid rgba(255,255,255,.3);
+            background: rgba(0,0,0,.5)
+        }
+
+        .explanation-panel {
+            background: rgba(255,255,255,.08);
+            border-radius: 15px;
+            padding: 25px;
+            margin: 20px 0;
+            border: 2px solid rgba(255,255,255,.2);
+            display: none
+        }
+
+            .explanation-panel.active {
+                display: block
+            }
+
+        .explanation-header {
+            font-size: 1.6em;
+            font-weight: 700;
+            color: #4ecdc4;
+            text-align: center;
+            margin-bottom: 25px;
+            text-shadow: 0 0 10px rgba(78,205,196,.5)
+        }
+
+        .explanation-content {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px
+        }
+
+        .explanation-section {
+            background: rgba(255,255,255,.1);
+            border-radius: 12px;
+            padding: 20px;
+            border: 1px solid rgba(255,255,255,.2)
+        }
+
+        .section-title {
+            font-size: 1.2em;
+            font-weight: 700;
+            color: #ff6b6b;
+            margin-bottom: 15px;
+            border-bottom: 2px solid rgba(255,107,107,.3);
+            padding-bottom: 8px
+        }
+
+        .math-equation {
+            background: rgba(0,0,0,.4);
+            padding: 12px;
+            border-radius: 8px;
+            font-family: 'Courier New',monospace;
+            font-size: .95em;
+            margin: 10px 0;
+            border-left: 4px solid #4ecdc4;
+            color: #e8e8e8
+        }
+
+        .highlight-box {
+            background: rgba(78,205,196,.15);
+            border: 1px solid rgba(78,205,196,.3);
+            border-radius: 8px;
+            padding: 12px;
+            margin: 10px 0;
+            font-size: .9em
+        }
+
+        .comparison-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+            margin: 15px 0
+        }
+
+        .algorithm-comparison {
+            background: rgba(255,255,255,.05);
+            padding: 15px;
+            border-radius: 10px;
+            border: 1px solid rgba(255,255,255,.2)
+        }
+
+        .algo-title {
+            font-weight: 700;
+            margin-bottom: 10px;
+            text-align: center
+        }
+
+        .rw-title {
+            color: #ff6b6b
+        }
+
+        .hmc-title {
+            color: #4ecdc4
+        }
+
+        /* Interactive Charts panel */
+        .python-panel {
+            background: rgba(255,255,255,.06);
+            border-radius: 15px;
+            border: 1px solid rgba(255,255,255,.12);
+            padding: 20px;
+            margin-top: 10px;
+            display: none
+        }
+
+            .python-panel.active {
+                display: block
+            }
+
+        .python-tip {
+            background: rgba(0,0,0,.35);
+            border: 1px solid rgba(255,255,255,.2);
+            padding: 10px 12px;
+            border-radius: 10px;
+            margin-bottom: 15px;
+            font-size: .95em
+        }
+
+        .media-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit,minmax(260px,1fr));
+            gap: 16px
+        }
+
+        .media-card {
+            background: rgba(0,0,0,.3);
+            border: 1px solid rgba(255,255,255,.2);
+            border-radius: 12px;
+            padding: 12px
+        }
+
+            .media-card h4 {
+                margin-bottom: 8px;
+                font-size: 1em;
+                color: #a8edea
+            }
+
+            .media-card canvas {
+                width: 100%;
+                border-radius: 8px;
+                border: 1px solid rgba(255,255,255,.15);
+                background: #0e1325
+            }
+
+        @media(max-width:1024px) {
+            .explanation-content {
+                grid-template-columns: 1fr
+            }
+        }
+
+        @media(max-width:768px) {
+            .main-content {
+                grid-template-columns: 1fr
+            }
+
+            .canvas-container {
+                grid-template-columns: 1fr
+            }
+
+            .stat-grid {
+                grid-template-columns: 1fr
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1 class="main-title">Enhanced HMC Laboratory</h1>
+            <p class="subtitle">Interactive Statistical Sampling with Advanced Diagnostics</p>
+            <div class="insight-note" style="background:rgba(78,205,196,.15);border:1px solid rgba(78,205,196,.3);border-radius:10px;padding:15px;margin:15px 0;font-size:.95em;">
+                <strong>HMC Innovation:</strong> Advanced sampling algorithm that uses gradient information and momentum to efficiently explore complex probability distributions.
+            </div>
+        </div>
+
+        <!-- Mode Selection -->
+        <div class="mode-selector">
+            <button class="mode-btn active" id="mode-basic" title="Standard comparison">Basic Comparison</button>
+            <button class="mode-btn" id="mode-advanced" title="Advanced diagnostics">Advanced Analysis</button>
+            <button class="mode-btn" id="mode-game" title="Treasure hunt race!">Treasure Hunt Game</button>
+            <button class="mode-btn" id="mode-debug" title="Show HMC internals">HMC Mind Reader</button>
+            <button class="mode-btn" id="mode-python" title="Real-time interactive charts">Interactive Charts</button>
+        </div>
+
+        <!-- Controls -->
+        <div class="controls-panel">
+            <div class="control-group">
+                <label>Sampling Speed</label>
+                <div class="slider-container">
+                    <input type="range" class="slider" id="speed-slider" min="1" max="20" value="10" />
+                    <span class="slider-value" id="speed-value">10x</span>
+                </div>
+            </div>
+            <div class="control-group">
+                <label>Random Walk Step Size</label>
+                <div class="slider-container">
+                    <input type="range" class="slider" id="rw-step-slider" min="5" max="50" value="20" />
+                    <span class="slider-value" id="rw-step-value">20</span>
+                </div>
+            </div>
+            <div class="control-group">
+                <label>HMC Trajectory Length</label>
+                <div class="slider-container">
+                    <input type="range" class="slider" id="hmc-length-slider" min="5" max="50" value="20" />
+                    <span class="slider-value" id="hmc-length-value">20</span>
+                </div>
+            </div>
+            <div class="control-group">
+                <label>Distribution Type</label>
+                <select id="distribution-select" style="width:100%;padding:8px;border-radius:5px;background:rgba(255,255,255,.1);color:#fff;border:1px solid rgba(255,255,255,.3);">
+                    <option value="multimodal">Multiple Peaks : התפלגות עם כמה אזורים של הסתברות גבוהה</option>
+                    <option value="single">Single Peak: התפלגות פשוטה עם אזור יחיד ומוגדר של הסתברות גבוהה</option>
+                    <option value="valley">Valley Shape : התפלגות מורכבת עם אזור צר וארוך של הסתברות גבוהה</option>
+                    <option value="ring">Ring Shape : התפלגות עם צורה מעגלית של הסתברות גבוהה</option>
+                </select>
+            </div>
+        </div>
+
+        <!-- Action Buttons -->
+        <div class="action-buttons">
+            <button class="btn btn-primary" id="btn-start-rw">Start Random Walk<div style="font-size:.8em;opacity:.8;margin-top:2px;">Traditional MCMC</div></button>
+            <button class="btn btn-secondary" id="btn-start-hmc">Start HMC Explorer<div style="font-size:.8em;opacity:.8;margin-top:2px;">Gradient-guided sampling</div></button>
+            <button class="btn btn-success" id="btn-start-both">Race Both!<div style="font-size:.8em;opacity:.8;margin-top:2px;">Direct comparison</div></button>
+            <button class="btn btn-warning" id="btn-reset">Reset Laboratory<div style="font-size:.8em;opacity:.8;margin-top:2px;">Start fresh</div></button>
+        </div>
+
+        <!-- Main Content -->
+        <div class="main-content">
+            <div class="visualization-area">
+                <div class="canvas-container">
+                    <div class="canvas-wrapper">
+                        <div class="canvas-title">Random Walk Explorer</div>
+                        <canvas id="randomWalkCanvas" width="400" height="400"></canvas>
+                    </div>
+                    <div class="canvas-wrapper">
+                        <div class="canvas-title">HMC Smart Explorer</div>
+                        <canvas id="hmcCanvas" width="400" height="400"></canvas>
+                    </div>
+                </div>
+
+                <div class="legend">
+                    <div class="legend-item"><div class="legend-color" style="background:#ff6b6b"></div><span>Random Walk Path</span></div>
+                    <div class="legend-item"><div class="legend-color" style="background:#4ecdc4"></div><span>HMC Path</span></div>
+                    <div class="legend-item"><div class="legend-color" style="background:rgba(255,255,0,.5)"></div><span>High Value Areas</span></div>
+                </div>
+
+                <!-- Game Mode -->
+                <div id="game-mode-content" class="game-mode">
+                    <div class="game-stats">
+                        <div>🏆 Treasure Hunt Competition 🏆</div>
+                        <div>First to collect 10 treasures wins!</div>
+                        <div>RW Treasures: <span id="rw-treasures">0</span> | HMC Treasures: <span id="hmc-treasures">0</span></div>
+                    </div>
+                </div>
+
+                <!-- Debug Mode -->
+                <div id="debug-mode-content" class="game-mode">
+                    <div class="hmc-thinking-panel">
+                        <div class="thinking-header">🧠 HMC's Thinking Process</div>
+                        <div class="thinking-grid">
+                            <div class="thinking-section">
+                                <div class="thinking-title">Current State</div>
+                                <div id="current-state">Position: (200, 200)<br />Velocity: (0, 0)</div>
+                            </div>
+                            <div class="thinking-section">
+                                <div class="thinking-title">Gradient Analysis</div>
+                                <div id="gradient-info">∇U = (0, 0)<br />Force Direction: →</div>
+                            </div>
+                            <div class="thinking-section">
+                                <div class="thinking-title">Energy Equation</div>
+                                <div id="energy-equation">H = U(q) + K(p)<br />Current H: 0.00</div>
+                            </div>
+                            <div class="thinking-section">
+                                <div class="thinking-title">Decision</div>
+                                <div id="decision-info">Calculating trajectory...<br />Accept probability: --</div>
+                            </div>
+                        </div>
+                        <div class="trajectory-preview">
+                            <div class="trajectory-title">Proposed Trajectory</div>
+                            <canvas id="trajectoryCanvas" width="300" height="200"></canvas>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Interactive Charts Panel -->
+                <div id="python-panel" class="python-panel">
+                    <div class="python-tip">
+                        <strong>Interactive Analysis:</strong> These charts are generated in real-time using your current sampling data and settings.
+                    </div>
+                    <div class="media-grid">
+                        <div class="media-card">
+                            <h4>Sampling Convergence</h4>
+                            <canvas id="convergenceChart" width="300" height="200"></canvas>
+                        </div>
+                        <div class="media-card">
+                            <h4>Efficiency Over Time</h4>
+                            <canvas id="efficiencyChart" width="300" height="200"></canvas>
+                        </div>
+                        <div class="media-card">
+                            <h4>Sample Distribution Comparison</h4>
+                            <canvas id="distributionChart" width="300" height="200"></canvas>
+                        </div>
+                        <div class="media-card">
+                            <h4>Acceptance Rate Analysis</h4>
+                            <canvas id="acceptanceChart" width="300" height="200"></canvas>
+                        </div>
+                        <div class="media-card">
+                            <h4>Autocorrelation Function</h4>
+                            <canvas id="autocorrelationChart" width="300" height="200"></canvas>
+                        </div>
+                        <div class="media-card">
+                            <h4>Energy Landscape Exploration</h4>
+                            <canvas id="energyChart" width="300" height="200"></canvas>
+                        </div>
+                        <div class="media-card">
+                            <h4>Step Size vs Performance</h4>
+                            <canvas id="stepSizeChart" width="300" height="200"></canvas>
+                        </div>
+                        <div class="media-card">
+                            <h4>Real-time Treasure Collection</h4>
+                            <canvas id="treasureChart" width="300" height="200"></canvas>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Statistics -->
+            <div class="stats-panel">
+                <div class="stats-section">
+                    <div class="stats-title">Live Statistics</div>
+                    <div class="stat-grid">
+                        <div class="stat-card"><div class="stat-value" id="rwSamples">0</div><div class="stat-label">RW Samples</div></div>
+                        <div class="stat-card"><div class="stat-value" id="hmcSamples">0</div><div class="stat-label">HMC Samples</div></div>
+                        <div class="stat-card"><div class="stat-value" id="rwEfficiency">0%</div><div class="stat-label">RW Efficiency</div></div>
+                        <div class="stat-card"><div class="stat-value" id="hmcEfficiency">0%</div><div class="stat-label">HMC Efficiency</div></div>
+                    </div>
+                </div>
+
+                <div class="stats-section">
+                    <div class="stats-title">Performance Metrics</div>
+                    <div class="efficiency-meter"><div class="efficiency-fill random-walk" id="rw-efficiency-bar" style="width:0%"></div></div>
+                    <div style="text-align:center;margin:5px 0;">Random Walk</div>
+                    <div class="efficiency-meter"><div class="efficiency-fill hmc" id="hmc-efficiency-bar" style="width:0%"></div></div>
+                    <div style="text-align:center;margin:5px 0;">HMC</div>
+                </div>
+
+                <div class="stats-section">
+                    <div class="stats-title">Current Winner</div>
+                    <div id="winner-display" style="text-align:center;font-size:1.5em;font-weight:700;color:#fff">Ready to Start!</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Explanation Panels -->
+        <div id="basic-explanation" class="explanation-panel active">
+            <div class="explanation-header">Statistical Sampling: Mathematical Foundations</div>
+            <div class="explanation-content">
+                <div class="explanation-section">
+                    <div class="section-title">Markov Chain Monte Carlo Theory</div>
+                    <p>Both algorithms implement MCMC methods to sample from probability distributions π(x) where direct sampling is impossible. The goal is to construct a Markov chain with stationary distribution π(x).</p>
+                    <div class="math-equation">Target: π(x) ∝ exp(-U(x))<br />where U(x) is the potential energy function</div>
+                    <p><strong>Detailed Balance Condition:</strong> For ergodic sampling, we need:</p>
+                    <div class="math-equation">π(x)P(x→x') = π(x')P(x'→x)<br />where P(x→x') is transition probability</div>
+                    <div class="highlight-box"><strong>Key Insight:</strong> Random Walk uses local proposals while HMC uses global proposals informed by the distribution's geometry through gradient information ∇U(x).</div>
+                </div>
+
+                <div class="explanation-section">
+                    <div class="section-title">Metropolis-Hastings Framework</div>
+                    <p>Both algorithms use the Metropolis-Hastings acceptance criterion to ensure convergence to the target distribution:</p>
+                    <div class="math-equation">α(x→x') = min(1, π(x')q(x'→x) / π(x)q(x→x'))<br />where q(x→x') is the proposal distribution</div>
+                    <div class="comparison-grid">
+                        <div class="algorithm-comparison">
+                            <div class="algo-title rw-title">Random Walk</div>
+                            <div class="math-equation">q(x→x') = N(x', σ²I)<br />α = min(1, π(x')/π(x))</div>
+                            <p>Symmetric proposals simplify acceptance ratio to likelihood ratio only.</p>
+                        </div>
+                        <div class="algorithm-comparison">
+                            <div class="algo-title hmc-title">HMC</div>
+                            <div class="math-equation">q(x→x') from Hamiltonian dynamics<br />α = min(1, exp(-H(x') + H(x)))</div>
+                            <p>Volume-preserving dynamics maintain detailed balance with energy conservation.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div id="advanced-explanation" class="explanation-panel">
+            <div class="explanation-header">Advanced Statistical Analysis: Convergence & Efficiency</div>
+            <div class="explanation-content">
+                <div class="explanation-section">
+                    <div class="section-title">Convergence Diagnostics</div>
+                    <p><strong>Effective Sample Size (ESS):</strong> Measures how many independent samples your correlated chain represents:</p>
+                    <div class="math-equation">ESS = N / (1 + 2∑ρₖ)<br />where ρₖ is lag-k autocorrelation</div>
+                    <p><strong>Autocorrelation Function:</strong></p>
+                    <div class="math-equation">ρₖ = Cov(Xₜ, Xₜ₊ₖ) / Var(Xₜ)<br />Lower ρₖ → Higher ESS → Better mixing</div>
+                    <div class="highlight-box"><strong>HMC Advantage:</strong> Gradient information reduces autocorrelation by making distant proposals, typically achieving ESS/N ratios of 0.6–0.9 vs 0.1–0.3 for Random Walk.</div>
+                </div>
+                <div class="explanation-section">
+                    <div class="section-title">Geometric Convergence Analysis</div>
+                    <p><strong>Spectral Gap:</strong> The second-largest eigenvalue λ₂ of the transition kernel determines convergence rate:</p>
+                    <div class="math-equation">||Pⁿ(x,·) − π||ₜᵥ ≤ C λ₂ⁿ<br />Smaller λ₂ → Faster convergence</div>
+                    <p><strong>Optimal Scaling Theory:</strong></p>
+                    <div class="math-equation">Random Walk: Accept rate ≈ 0.44 (d-dimensional)<br />HMC: Accept rate ≈ 0.65 (trajectory-dependent)</div>
+                    <ul style="margin:10px 0 0 20px">
+                        <li>Random Walk: O(1) per proposal</li>
+                        <li>HMC: O(L) per proposal, where L is trajectory length</li>
+                        <li>But HMC achieves ~L² effective sample size improvement</li>
+                    </ul>
+                    <div class="highlight-box"><strong>Efficiency Metric:</strong> ESS per gradient evaluation. HMC typically achieves 10–100× improvement in high-dimensional problems.</div>
+                </div>
+            </div>
+        </div>
+
+        <div id="game-explanation" class="explanation-panel">
+            <div class="explanation-header">Treasure Hunt: Exploration Strategy Analysis</div>
+            <div class="explanation-content">
+                <div class="explanation-section">
+                    <div class="section-title">Search Strategy Mathematics</div>
+                    <p><strong>Exploration vs Exploitation Trade-off:</strong> Finding high-probability regions efficiently requires balancing exploration of unknown areas with exploitation of discovered high-value zones.</p>
+                    <div class="math-equation">Utility(x) = P(treasure|x) × P(discovery|x)<br />where P(treasure|x) ∝ π(x)</div>
+                    <p><strong>Random Walk Strategy:</strong></p>
+                    <div class="math-equation">E[discovery_time] ∝ d²/σ²<br />where d is distance to target, σ is step size</div>
+                </div>
+                <div class="explanation-section">
+                    <div class="section-title">Gradient-Guided Search Theory</div>
+                    <p><strong>HMC Treasure Finding:</strong> Uses gradient ascent properties within MCMC to locate high-density regions systematically.</p>
+                    <div class="math-equation">∇log π(x) = -∇U(x)</div>
+                    <div class="math-equation">dq/dt = ∂H/∂p = p<br />dp/dt = -∂H/∂q = -∇U(q)</div>
+                </div>
+            </div>
+        </div>
+
+        <div id="debug-explanation" class="explanation-panel">
+            <div class="explanation-header">HMC Algorithm Internals: Mathematical Decomposition</div>
+            <div class="explanation-content">
+                <div class="explanation-section">
+                    <div class="section-title">Hamiltonian Dynamics Foundation</div>
+                    <div class="math-equation">H(q,p) = U(q) + K(p)<br />U(q) = -log π(q) + const<br />K(p) = pᵀM⁻¹p / 2</div>
+                    <div class="math-equation">Leapfrog:<br />p←p − (ε/2)∇U(q); q←q + εM⁻¹p; p←p − (ε/2)∇U(q)</div>
+                </div>
+                <div class="explanation-section">
+                    <div class="section-title">Real-Time Decision Process</div>
+                    <div class="math-equation">ΔH = H(q*,p*) − H(q,p); accept with prob exp(−ΔH)</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // ----------- Global State -----------
+        const state = {
+            rwCanvas: null, hmcCanvas: null, rwCtx: null, hmcCtx: null,
+            rwX: 200, rwY: 200, hmcX: 200, hmcY: 200,
+            rwPath: [], hmcPath: [], rwAnimation: null, hmcAnimation: null,
+            hmcVx: 0, hmcVy: 0, hmcStep: 0, hmcTrajectoryX: 200, hmcTrajectoryY: 200,
+            currentMode: 'basic', currentDistribution: 'multimodal',
+            rwStats: { samples: 0, accepted: 0, highValueSamples: 0, treasures: 0 },
+            hmcStats: { samples: 0, accepted: 0, highValueSamples: 0, treasures: 0 },
+            // Chart data storage
+            chartData: {
+                convergenceRW: [], convergenceHMC: [],
+                efficiencyRW: [], efficiencyHMC: [],
+                acceptanceRW: [], acceptanceHMC: [],
+                energyRW: [], energyHMC: [],
+                treasureTimeRW: [], treasureTimeHMC: [],
+                startTime: Date.now()
+            }
+        };
+
+        // ----------- Distributions -----------
+        const distributions = {
+            multimodal: [
+                { x: 150, y: 120, intensity: 0.8, width: 40 },
+                { x: 280, y: 200, intensity: 0.9, width: 50 },
+                { x: 100, y: 300, intensity: 0.7, width: 35 },
+                { x: 320, y: 80, intensity: 0.6, width: 45 }
+            ],
+            single: [{ x: 200, y: 200, intensity: 1.0, width: 80 }],
+            valley: [
+                { x: 100, y: 100, intensity: 0.3, width: 60 },
+                { x: 300, y: 100, intensity: 0.3, width: 60 },
+                { x: 100, y: 300, intensity: 0.3, width: 60 },
+                { x: 300, y: 300, intensity: 0.3, width: 60 },
+                { x: 200, y: 200, intensity: 0.9, width: 30 }
+            ],
+            ring: [
+                { x: 200, y: 120, intensity: 0.8, width: 30 },
+                { x: 280, y: 200, intensity: 0.8, width: 30 },
+                { x: 200, y: 280, intensity: 0.8, width: 30 },
+                { x: 120, y: 200, intensity: 0.8, width: 30 }
+            ]
+        };
+
+        // ----------- Init -----------
+        window.addEventListener('DOMContentLoaded', () => {
+            initializeCanvases(); wireUI(); drawInitialState();
+        });
+
+        function initializeCanvases() {
+            state.rwCanvas = document.getElementById('randomWalkCanvas');
+            state.hmcCanvas = document.getElementById('hmcCanvas');
+            state.rwCtx = state.rwCanvas.getContext('2d');
+            state.hmcCtx = state.hmcCanvas.getContext('2d');
+        }
+
+        function wireUI() {
+            // Mode buttons (added python)
+            document.getElementById('mode-basic').addEventListener('click', () => setMode('basic'));
+            document.getElementById('mode-advanced').addEventListener('click', () => setMode('advanced'));
+            document.getElementById('mode-game').addEventListener('click', () => setMode('game'));
+            document.getElementById('mode-debug').addEventListener('click', () => setMode('debug'));
+            document.getElementById('mode-python').addEventListener('click', () => setMode('python'));
+
+            // Action buttons
+            document.getElementById('btn-start-rw').addEventListener('click', startRandomWalk);
+            document.getElementById('btn-start-hmc').addEventListener('click', startHMC);
+            document.getElementById('btn-start-both').addEventListener('click', startBoth);
+            document.getElementById('btn-reset').addEventListener('click', resetDemo);
+
+            // Sliders
+            document.getElementById('speed-slider').addEventListener('input', onSlider);
+            document.getElementById('rw-step-slider').addEventListener('input', onSlider);
+            document.getElementById('hmc-length-slider').addEventListener('input', onSlider);
+
+            // Distribution select
+            document.getElementById('distribution-select').addEventListener('change', () => {
+                state.currentDistribution = document.getElementById('distribution-select').value;
+                drawInitialState();
+            });
+
+            // Initial labels
+            document.getElementById('speed-value').textContent = document.getElementById('speed-slider').value + 'x';
+            document.getElementById('rw-step-value').textContent = document.getElementById('rw-step-slider').value;
+            document.getElementById('hmc-length-value').textContent = document.getElementById('hmc-length-slider').value;
+        }
+
+        function onSlider(e) {
+            const id = e.target.id, val = e.target.value;
+            document.getElementById(id.replace('-slider', '-value')).textContent = (id === 'speed-slider') ? (val + 'x') : val;
+        }
+
+        // ----------- Drawing helpers -----------
+        function drawInitialState() {
+            drawBackground(state.rwCtx); drawBackground(state.hmcCtx);
+            drawCurrentPosition(state.rwCtx, state.rwX, state.rwY, '#ff6b6b');
+            drawCurrentPosition(state.hmcCtx, state.hmcX, state.hmcY, '#4ecdc4');
+        }
+        function drawBackground(ctx) {
+            const w = 400, h = 400, imageData = ctx.createImageData(w, h), data = imageData.data;
+            const peaks = distributions[state.currentDistribution] || distributions.multimodal;
+            for (let x = 0; x < w; x++) {
+                for (let y = 0; y < h; y++) {
+                    let total = 0;
+                    for (const t of peaks) {
+                        const dx = x - t.x, dy = y - t.y, dist2 = dx * dx + dy * dy, variance = t.width * t.width;
+                        total += t.intensity * Math.exp(-dist2 / (2 * variance));
+                    }
+                    const idx = (y * w + x) * 4, intensity = Math.min(total, 1);
+                    if (intensity > 0.7) { data[idx] = 255; data[idx + 1] = 255; data[idx + 2] = 100; data[idx + 3] = Math.floor(150 + 105 * intensity); }
+                    else if (intensity > 0.3) { data[idx] = 255; data[idx + 1] = Math.floor(165 + 90 * intensity); data[idx + 2] = 0; data[idx + 3] = Math.floor(100 + 155 * intensity); }
+                    else { data[idx] = Math.floor(50 + 100 * intensity); data[idx + 1] = Math.floor(50 + 100 * intensity); data[idx + 2] = Math.floor(150 + 105 * intensity); data[idx + 3] = Math.floor(80 + 100 * intensity); }
+                }
+            }
+            ctx.putImageData(imageData, 0, 0);
+        }
+        function drawCurrentPosition(ctx, x, y, color) {
+            ctx.fillStyle = color; ctx.beginPath(); ctx.arc(x, y, 10, 0, 2 * Math.PI); ctx.fill();
+            ctx.strokeStyle = '#fff'; ctx.lineWidth = 3; ctx.stroke();
+        }
+        function drawPath(ctx, path, color) {
+            if (path.length < 2) return;
+            ctx.strokeStyle = color; ctx.lineWidth = 2; ctx.globalAlpha = .7; ctx.beginPath();
+            ctx.moveTo(path[0].x, path[0].y); for (let i = 1; i < path.length; i++) ctx.lineTo(path[i].x, path[i].y);
+            ctx.stroke(); ctx.globalAlpha = 1;
+        }
+        function redrawCanvas(ctx, path, x, y, color) { drawBackground(ctx); drawPath(ctx, path, color); drawCurrentPosition(ctx, x, y, color); }
+
+        // ----------- Probability & Gradient -----------
+        function getProbability(x, y) {
+            const peaks = distributions[state.currentDistribution] || distributions.multimodal;
+            let total = 0; for (const t of peaks) { const dx = x - t.x, dy = y - t.y, dist2 = dx * dx + dy * dy; total += t.intensity * Math.exp(-dist2 / (2 * t.width * t.width)); }
+            return Math.min(total, 1);
+        }
+        function getGradient(x, y) {
+            const eps = 1, dx = (getProbability(x + eps, y) - getProbability(x - eps, y)) / (2 * eps);
+            const dy = (getProbability(x, y + eps) - getProbability(x, y - eps)) / (2 * eps);
+            return { dx, dy };
+        }
+
+        // ----------- Modes / Panels -----------
+        function setMode(mode) {
+            ['basic', 'advanced', 'game', 'debug', 'python'].forEach(m => {
+                document.getElementById(`mode-${m}`).classList.toggle('active', m === mode);
+            });
+            state.currentMode = mode;
+
+            // hide special areas
+            document.getElementById('game-mode-content').classList.remove('active');
+            document.getElementById('debug-mode-content').classList.remove('active');
+            document.getElementById('python-panel').classList.remove('active');
+
+            // hide all explanations
+            ['basic', 'advanced', 'game', 'debug'].forEach(m => {
+                const el = document.getElementById(`${m}-explanation`); if (el) el.classList.remove('active');
+            });
+
+            // show relevant
+            if (mode === 'game') {
+                document.getElementById('game-mode-content').classList.add('active');
+                document.getElementById('game-explanation').classList.add('active');
+                resetDemo();
+            } else if (mode === 'debug') {
+                document.getElementById('debug-mode-content').classList.add('active');
+                document.getElementById('debug-explanation').classList.add('active');
+                initTrajectoryCanvas();
+            } else if (mode === 'advanced') {
+                document.getElementById('advanced-explanation').classList.add('active');
+            } else if (mode === 'python') {
+                document.getElementById('python-panel').classList.add('active');
+                initializeCharts();
+            } else {
+                document.getElementById('basic-explanation').classList.add('active');
+            }
+        }
+
+        function initTrajectoryCanvas() {
+            const c = document.getElementById('trajectoryCanvas'); if (!c) return;
+            const ctx = c.getContext('2d');
+            ctx.fillStyle = 'rgba(20,30,50,.8)'; ctx.fillRect(0, 0, c.width, c.height);
+            ctx.strokeStyle = 'rgba(255,255,255,.1)'; ctx.lineWidth = 1;
+            for (let i = 0; i <= c.width; i += 30) { ctx.beginPath(); ctx.moveTo(i, 0); ctx.lineTo(i, c.height); ctx.stroke(); }
+            for (let j = 0; j <= c.height; j += 25) { ctx.beginPath(); ctx.moveTo(0, j); ctx.lineTo(c.width, j); ctx.stroke(); }
+        }
+
+        // ----------- Interactive Charts -----------
+        function initializeCharts() {
+            // Initialize all chart canvases with dark backgrounds and grid
+            const chartIds = ['convergenceChart', 'efficiencyChart', 'distributionChart', 'acceptanceChart',
+                'autocorrelationChart', 'energyChart', 'stepSizeChart', 'treasureChart'];
+
+            chartIds.forEach(id => {
+                const canvas = document.getElementById(id);
+                if (!canvas) return;
+                const ctx = canvas.getContext('2d');
+                drawChartBackground(ctx, canvas.width, canvas.height);
+            });
+
+            // Start chart update interval
+            if (state.chartUpdateInterval) clearInterval(state.chartUpdateInterval);
+            state.chartUpdateInterval = setInterval(updateAllCharts, 1000);
+        }
+
+        function drawChartBackground(ctx, w, h) {
+            ctx.fillStyle = 'rgba(20,30,50,.9)';
+            ctx.fillRect(0, 0, w, h);
+
+            // Grid lines
+            ctx.strokeStyle = 'rgba(255,255,255,.1)';
+            ctx.lineWidth = 1;
+            for (let x = 0; x <= w; x += 30) {
+                ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, h); ctx.stroke();
+            }
+            for (let y = 0; y <= h; y += 25) {
+                ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(w, y); ctx.stroke();
+            }
+        }
+
+        function updateAllCharts() {
+            if (state.currentMode !== 'python') return;
+
+            updateConvergenceChart();
+            updateEfficiencyChart();
+            updateDistributionChart();
+            updateAcceptanceChart();
+            updateAutocorrelationChart();
+            updateEnergyChart();
+            updateStepSizeChart();
+            updateTreasureChart();
+        }
+
+        function updateConvergenceChart() {
+            const canvas = document.getElementById('convergenceChart');
+            if (!canvas) return;
+            const ctx = canvas.getContext('2d');
+            const w = canvas.width, h = canvas.height;
+
+            drawChartBackground(ctx, w, h);
+
+            // Calculate running averages
+            const rwRunningAvg = calculateRunningAverage(state.rwPath.map(p => getProbability(p.x, p.y)));
+            const hmcRunningAvg = calculateRunningAverage(state.hmcPath.map(p => getProbability(p.x, p.y)));
+
+            drawLineChart(ctx, w, h, rwRunningAvg, '#ff6b6b', 'Random Walk');
+            drawLineChart(ctx, w, h, hmcRunningAvg, '#4ecdc4', 'HMC');
+
+            // Add labels
+            ctx.fillStyle = '#fff';
+            ctx.font = '12px Arial';
+            ctx.fillText('Convergence to High-Probability Regions', 5, 15);
+            ctx.font = '10px Arial';
+            ctx.fillText('Sample Number →', w - 80, h - 5);
+            ctx.save();
+            ctx.rotate(-Math.PI / 2);
+            ctx.fillText('Average Probability', 5, 15);
+            ctx.restore();
+        }
+
+        function updateEfficiencyChart() {
+            const canvas = document.getElementById('efficiencyChart');
+            if (!canvas) return;
+            const ctx = canvas.getContext('2d');
+            const w = canvas.width, h = canvas.height;
+
+            drawChartBackground(ctx, w, h);
+
+            // Calculate efficiency over time (high-value samples per total samples in windows)
+            const windowSize = 50;
+            const rwEff = calculateWindowedEfficiency(state.rwPath, windowSize);
+            const hmcEff = calculateWindowedEfficiency(state.hmcPath, windowSize);
+
+            drawLineChart(ctx, w, h, rwEff, '#ff6b6b');
+            drawLineChart(ctx, w, h, hmcEff, '#4ecdc4');
+
+            ctx.fillStyle = '#fff';
+            ctx.font = '12px Arial';
+            ctx.fillText('Sampling Efficiency Over Time', 5, 15);
+        }
+
+        function updateDistributionChart() {
+            const canvas = document.getElementById('distributionChart');
+            if (!canvas) return;
+            const ctx = canvas.getContext('2d');
+            const w = canvas.width, h = canvas.height;
+
+            drawChartBackground(ctx, w, h);
+
+            // Create histograms of sample values
+            const rwValues = state.rwPath.map(p => getProbability(p.x, p.y));
+            const hmcValues = state.hmcPath.map(p => getProbability(p.x, p.y));
+
+            drawHistogram(ctx, w, h, rwValues, '#ff6b6b', 0);
+            drawHistogram(ctx, w, h, hmcValues, '#4ecdc4', h / 2);
+
+            ctx.fillStyle = '#fff';
+            ctx.font = '12px Arial';
+            ctx.fillText('Sample Distribution Comparison', 5, 15);
+        }
+
+        function updateAcceptanceChart() {
+            const canvas = document.getElementById('acceptanceChart');
+            if (!canvas) return;
+            const ctx = canvas.getContext('2d');
+            const w = canvas.width, h = canvas.height;
+
+            drawChartBackground(ctx, w, h);
+
+            // Calculate acceptance rates over time
+            const rwRate = state.rwStats.samples > 0 ? state.rwStats.accepted / state.rwStats.samples : 0;
+            const hmcRate = state.hmcStats.samples > 0 ? state.hmcStats.accepted / state.hmcStats.samples : 0;
+
+            // Draw bar chart
+            drawBarChart(ctx, w, h, [rwRate, hmcRate], ['#ff6b6b', '#4ecdc4'], ['RW', 'HMC']);
+
+            ctx.fillStyle = '#fff';
+            ctx.font = '12px Arial';
+            ctx.fillText('Acceptance Rates', 5, 15);
+        }
+
+        function updateAutocorrelationChart() {
+            const canvas = document.getElementById('autocorrelationChart');
+            if (!canvas) return;
+            const ctx = canvas.getContext('2d');
+            const w = canvas.width, h = canvas.height;
+
+            drawChartBackground(ctx, w, h);
+
+            // Calculate autocorrelation for both algorithms
+            const rwValues = state.rwPath.map(p => getProbability(p.x, p.y));
+            const hmcValues = state.hmcPath.map(p => getProbability(p.x, p.y));
+
+            const rwAuto = calculateAutocorrelation(rwValues, Math.min(20, Math.floor(rwValues.length / 2)));
+            const hmcAuto = calculateAutocorrelation(hmcValues, Math.min(20, Math.floor(hmcValues.length / 2)));
+
+            drawLineChart(ctx, w, h, rwAuto, '#ff6b6b');
+            drawLineChart(ctx, w, h, hmcAuto, '#4ecdc4');
+
+            ctx.fillStyle = '#fff';
+            ctx.font = '12px Arial';
+            ctx.fillText('Autocorrelation Function', 5, 15);
+        }
+
+        function updateEnergyChart() {
+            const canvas = document.getElementById('energyChart');
+            if (!canvas) return;
+            const ctx = canvas.getContext('2d');
+            const w = canvas.width, h = canvas.height;
+
+            drawChartBackground(ctx, w, h);
+
+            // Show energy landscape exploration
+            const rwEnergies = state.rwPath.map(p => -Math.log(Math.max(getProbability(p.x, p.y), 0.001)));
+            const hmcEnergies = state.hmcPath.map(p => -Math.log(Math.max(getProbability(p.x, p.y), 0.001)));
+
+            drawLineChart(ctx, w, h, rwEnergies, '#ff6b6b');
+            drawLineChart(ctx, w, h, hmcEnergies, '#4ecdc4');
+
+            ctx.fillStyle = '#fff';
+            ctx.font = '12px Arial';
+            ctx.fillText('Energy Landscape Exploration', 5, 15);
+        }
+
+        function updateStepSizeChart() {
+            const canvas = document.getElementById('stepSizeChart');
+            if (!canvas) return;
+            const ctx = canvas.getContext('2d');
+            const w = canvas.width, h = canvas.height;
+
+            drawChartBackground(ctx, w, h);
+
+            // Show relationship between step size and performance
+            const rwStepSize = parseInt(document.getElementById('rw-step-slider').value);
+            const hmcLength = parseInt(document.getElementById('hmc-length-slider').value);
+
+            const rwEff = state.rwStats.samples > 0 ? state.rwStats.highValueSamples / state.rwStats.samples : 0;
+            const hmcEff = state.hmcStats.samples > 0 ? state.hmcStats.highValueSamples / state.hmcStats.samples : 0;
+
+            // Simple scatter plot of current settings vs efficiency
+            ctx.fillStyle = '#ff6b6b';
+            ctx.beginPath();
+            ctx.arc(rwStepSize * w / 50, h - rwEff * h, 8, 0, 2 * Math.PI);
+            ctx.fill();
+
+            ctx.fillStyle = '#4ecdc4';
+            ctx.beginPath();
+            ctx.arc(hmcLength * w / 50, h - hmcEff * h, 8, 0, 2 * Math.PI);
+            ctx.fill();
+
+            ctx.fillStyle = '#fff';
+            ctx.font = '12px Arial';
+            ctx.fillText('Step Size vs Performance', 5, 15);
+        }
+
+        function updateTreasureChart() {
+            const canvas = document.getElementById('treasureChart');
+            if (!canvas) return;
+            const ctx = canvas.getContext('2d');
+            const w = canvas.width, h = canvas.height;
+
+            drawChartBackground(ctx, w, h);
+
+            // Show treasure collection over time
+            const elapsedTime = (Date.now() - state.chartData.startTime) / 1000;
+
+            // Simple treasure count visualization
+            const maxTreasures = Math.max(state.rwStats.treasures, state.hmcStats.treasures, 1);
+            const rwHeight = (state.rwStats.treasures / Math.max(maxTreasures, 10)) * h * 0.8;
+            const hmcHeight = (state.hmcStats.treasures / Math.max(maxTreasures, 10)) * h * 0.8;
+
+            ctx.fillStyle = '#ff6b6b';
+            ctx.fillRect(w * 0.3, h - rwHeight - 20, w * 0.15, rwHeight);
+
+            ctx.fillStyle = '#4ecdc4';
+            ctx.fillRect(w * 0.55, h - hmcHeight - 20, w * 0.15, hmcHeight);
+
+            ctx.fillStyle = '#fff';
+            ctx.font = '12px Arial';
+            ctx.fillText('Real-time Treasure Collection', 5, 15);
+            ctx.font = '10px Arial';
+            ctx.fillText(`RW: ${state.rwStats.treasures}`, w * 0.25, h - 5);
+            ctx.fillText(`HMC: ${state.hmcStats.treasures}`, w * 0.55, h - 5);
+        }
+
+        // Helper functions for chart drawing
+        function calculateRunningAverage(data) {
+            const result = [];
+            let sum = 0;
+            for (let i = 0; i < data.length; i++) {
+                sum += data[i];
+                result.push(sum / (i + 1));
+            }
+            return result;
+        }
+
+        function calculateWindowedEfficiency(path, windowSize) {
+            const result = [];
+            for (let i = windowSize; i < path.length; i++) {
+                let highValueCount = 0;
+                for (let j = i - windowSize; j < i; j++) {
+                    if (getProbability(path[j].x, path[j].y) > 0.5) highValueCount++;
+                }
+                result.push(highValueCount / windowSize);
+            }
+            return result;
+        }
+
+        function calculateAutocorrelation(data, maxLag) {
+            if (data.length < 2) return [];
+            const mean = data.reduce((a, b) => a + b, 0) / data.length;
+            const variance = data.reduce((sum, x) => sum + (x - mean) ** 2, 0) / (data.length - 1);
+
+            const result = [];
+            for (let lag = 0; lag < maxLag && lag < data.length; lag++) {
+                let covariance = 0;
+                for (let i = 0; i < data.length - lag; i++) {
+                    covariance += (data[i] - mean) * (data[i + lag] - mean);
+                }
+                covariance /= (data.length - lag - 1);
+                result.push(variance > 0 ? covariance / variance : 0);
+            }
+            return result;
+        }
+
+        function drawLineChart(ctx, w, h, data, color, label) {
+            if (data.length < 2) return;
+
+            const maxVal = Math.max(...data, 0.1);
+            const minVal = Math.min(...data, 0);
+            const range = maxVal - minVal || 1;
+
+            ctx.strokeStyle = color;
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+
+            for (let i = 0; i < data.length; i++) {
+                const x = (i / (data.length - 1 || 1)) * (w - 20) + 10;
+                const y = h - ((data[i] - minVal) / range) * (h - 40) - 20;
+                if (i === 0) ctx.moveTo(x, y);
+                else ctx.lineTo(x, y);
+            }
+            ctx.stroke();
+        }
+
+        function drawHistogram(ctx, w, h, data, color, yOffset) {
+            if (data.length === 0) return;
+
+            const bins = 10;
+            const max = Math.max(...data, 1);
+            const binCounts = new Array(bins).fill(0);
+
+            data.forEach(val => {
+                const bin = Math.min(Math.floor((val / max) * bins), bins - 1);
+                binCounts[bin]++;
+            });
+
+            const maxCount = Math.max(...binCounts, 1);
+            const binWidth = w / bins;
+            const chartHeight = (h - yOffset) / 2 - 20;
+
+            ctx.fillStyle = color;
+            binCounts.forEach((count, i) => {
+                const barHeight = (count / maxCount) * chartHeight;
+                ctx.fillRect(i * binWidth, yOffset + chartHeight - barHeight, binWidth - 2, barHeight);
+            });
+        }
+
+        function drawBarChart(ctx, w, h, values, colors, labels) {
+            const barWidth = w / (values.length * 2);
+            const maxVal = Math.max(...values, 0.1);
+
+            values.forEach((val, i) => {
+                const barHeight = (val / maxVal) * (h - 40);
+                const x = i * barWidth * 2 + barWidth * 0.5;
+
+                ctx.fillStyle = colors[i];
+                ctx.fillRect(x, h - barHeight - 20, barWidth, barHeight);
+
+                ctx.fillStyle = '#fff';
+                ctx.font = '10px Arial';
+                ctx.fillText(labels[i], x, h - 5);
+                ctx.fillText(`${(val * 100).toFixed(1)}%`, x, h - barHeight - 25);
+            });
+        }
+
+        function drawTrajectoryPreview(path, start, end, accepted) {
+            if (state.currentMode !== 'debug') return;
+            const c = document.getElementById('trajectoryCanvas'); if (!c) return;
+            const ctx = c.getContext('2d');
+
+            ctx.fillStyle = 'rgba(20,30,50,.8)'; ctx.fillRect(0, 0, c.width, c.height);
+
+            const scaleX = c.width / 400, scaleY = c.height / 400;
+            const imageData = ctx.createImageData(c.width, c.height), data = imageData.data;
+            const peaks = distributions[state.currentDistribution] || distributions.multimodal;
+
+            for (let x = 0; x < c.width; x++) {
+                for (let y = 0; y < c.height; y++) {
+                    let total = 0, rx = x / scaleX, ry = y / scaleY;
+                    for (const t of peaks) { const dx = rx - t.x, dy = ry - t.y, v = t.width * t.width; total += t.intensity * Math.exp(-(dx * dx + dy * dy) / (2 * v)); }
+                    const idx = (y * c.width + x) * 4, I = Math.min(total, 1) * .3;
+                    data[idx] = 100 + 155 * I; data[idx + 1] = 100 + 155 * I; data[idx + 2] = 150 + 105 * I; data[idx + 3] = 80 + 100 * I;
+                }
+            }
+            ctx.putImageData(imageData, 0, 0);
+
+            if (path && path.length > 1) {
+                ctx.strokeStyle = accepted === true ? '#4ecdc4' : accepted === false ? '#ff6b6b' : '#ffffff';
+                ctx.lineWidth = 2; ctx.setLineDash([]); ctx.beginPath();
+                ctx.moveTo(path[0].x * scaleX, path[0].y * scaleY);
+                for (let i = 1; i < path.length; i++) ctx.lineTo(path[i].x * scaleX, path[i].y * scaleY);
+                ctx.stroke();
+                ctx.fillStyle = '#fff'; ctx.beginPath(); ctx.arc(path[0].x * scaleX, path[0].y * scaleY, 4, 0, 2 * Math.PI); ctx.fill();
+                ctx.fillStyle = accepted === true ? '#4ecdc4' : accepted === false ? '#ff6b6b' : '#ddd';
+                ctx.beginPath(); ctx.arc(path[path.length - 1].x * scaleX, path[path.length - 1].y * scaleY, 4, 0, 2 * Math.PI); ctx.fill();
+            }
+        }
+
+        function updateHMCThinking(x, y, vx, vy, gx, gy, energy, acceptProb, step, maxSteps) {
+            if (state.currentMode !== 'debug') return;
+            const currentState = document.getElementById('current-state');
+            const gradientInfo = document.getElementById('gradient-info');
+            const energyEquation = document.getElementById('energy-equation');
+            const decisionInfo = document.getElementById('decision-info');
+
+            if (currentState) currentState.innerHTML = `Position: (${x.toFixed(1)}, ${y.toFixed(1)})<br/>Velocity: (${vx.toFixed(2)}, ${vy.toFixed(2)})`;
+            if (gradientInfo) {
+                const dir = (Math.abs(gx) + Math.abs(gy) > 0.01) ? (gx > 0 ? '→' : '←') + (gy > 0 ? '↓' : '↑') : '•';
+                gradientInfo.innerHTML = `∇U = (${gx.toFixed(3)}, ${gy.toFixed(3)})<br/>Force Direction: ${dir}`;
+            }
+            if (energyEquation) {
+                const potential = -Math.log(Math.max(getProbability(x, y), 0.001));
+                const kinetic = 0.5 * (vx * vx + vy * vy) / 1000;
+                energyEquation.innerHTML = `H = U(q) + K(p)<br/>H = ${potential.toFixed(2)} + ${kinetic.toFixed(2)} = ${energy.toFixed(2)}`;
+            }
+            if (decisionInfo) {
+                if (acceptProb != null) {
+                    const decision = acceptProb > 0.5 ? 'ACCEPT' : 'REJECT';
+                    const color = acceptProb > 0.5 ? '#4ecdc4' : '#ff6b6b';
+                    decisionInfo.innerHTML = `Step ${step}/${maxSteps}<br/><span style="color:${color}">${decision} (p=${acceptProb.toFixed(3)})</span>`;
+                } else {
+                    decisionInfo.innerHTML = `Step ${step}/${maxSteps}<br/>Calculating trajectory...`;
+                }
+            }
+        }
+
+        // ----------- Algorithms -----------
+        function startRandomWalk() {
+            if (state.rwAnimation) clearInterval(state.rwAnimation);
+            const speed = parseInt(document.getElementById('speed-slider').value, 10);
+            const stepSize = parseInt(document.getElementById('rw-step-slider').value, 10);
+            state.rwAnimation = setInterval(() => {
+                const angle = Math.random() * 2 * Math.PI;
+                const step = stepSize / 4;
+                const nx = state.rwX + step * Math.cos(angle);
+                const ny = state.rwY + step * Math.sin(angle);
+                if (nx > 20 && nx < 380 && ny > 20 && ny < 380) {
+                    const cur = getProbability(state.rwX, state.rwY);
+                    const nxt = getProbability(nx, ny);
+                    const acc = Math.min(1, nxt / Math.max(cur, 0.01));
+                    if (Math.random() < acc) {
+                        state.rwX = nx; state.rwY = ny;
+                        state.rwPath.push({ x: state.rwX, y: state.rwY });
+                        state.rwStats.accepted++;
+                        const val = getProbability(state.rwX, state.rwY);
+                        if (val > 0.5) { state.rwStats.highValueSamples++; if (state.currentMode === 'game' && val > 0.8) { state.rwStats.treasures++; updateGameStats(); } }
+                    }
+                    state.rwStats.samples++;
+                }
+                redrawCanvas(state.rwCtx, state.rwPath, state.rwX, state.rwY, '#ff6b6b'); updateStatistics();
+            }, Math.max(50, 200 - speed * 8));
+        }
+
+        function startHMC() {
+            if (state.hmcAnimation) clearInterval(state.hmcAnimation);
+            const speed = parseInt(document.getElementById('speed-slider').value, 10);
+            const L = parseInt(document.getElementById('hmc-length-slider').value, 10);
+            const stepSize = 0.3;
+            let proposedPath = []; state.hmcStep = 0;
+
+            state.hmcAnimation = setInterval(() => {
+                if (state.hmcStep === 0) {
+                    state.hmcVx = (Math.random() - 0.5) * 40; state.hmcVy = (Math.random() - 0.5) * 40;
+                    state.hmcTrajectoryX = state.hmcX; state.hmcTrajectoryY = state.hmcY;
+                    proposedPath = [{ x: state.hmcX, y: state.hmcY }];
+                    if (state.currentMode === 'debug') {
+                        const g = getGradient(state.hmcX, state.hmcY);
+                        const E = -Math.log(Math.max(getProbability(state.hmcX, state.hmcY), 0.001)) + 0.5 * (state.hmcVx * state.hmcVx + state.hmcVy * state.hmcVy) / 1000;
+                        updateHMCThinking(state.hmcX, state.hmcY, state.hmcVx, state.hmcVy, g.dx, g.dy, E, null, 0, L);
+                    }
+                }
+
+                const g1 = getGradient(state.hmcTrajectoryX, state.hmcTrajectoryY);
+                state.hmcVx += stepSize * g1.dx * 500 * 0.5; state.hmcVy += stepSize * g1.dy * 500 * 0.5;
+
+                let nx = state.hmcTrajectoryX + stepSize * state.hmcVx;
+                let ny = state.hmcTrajectoryY + stepSize * state.hmcVy;
+                if (nx <= 20 || nx >= 380) { state.hmcVx *= -0.8; } else { state.hmcTrajectoryX = nx; }
+                if (ny <= 20 || ny >= 380) { state.hmcVy *= -0.8; } else { state.hmcTrajectoryY = ny; }
+
+                const g2 = getGradient(state.hmcTrajectoryX, state.hmcTrajectoryY);
+                state.hmcVx += stepSize * g2.dx * 500 * 0.5; state.hmcVy += stepSize * g2.dy * 500 * 0.5;
+
+                state.hmcStep++; proposedPath.push({ x: state.hmcTrajectoryX, y: state.hmcTrajectoryY });
+
+                if (state.currentMode === 'debug') {
+                    const E = -Math.log(Math.max(getProbability(state.hmcTrajectoryX, state.hmcTrajectoryY), 0.001)) + 0.5 * (state.hmcVx * state.hmcVx + state.hmcVy * state.hmcVy) / 1000;
+                    updateHMCThinking(state.hmcTrajectoryX, state.hmcTrajectoryY, state.hmcVx, state.hmcVy, g2.dx, g2.dy, E, null, state.hmcStep, L);
+                    drawTrajectoryPreview(proposedPath, { x: state.hmcX, y: state.hmcY }, { x: state.hmcTrajectoryX, y: state.hmcTrajectoryY }, null);
+                }
+
+                if (state.hmcStep >= L) {
+                    const curE = -Math.log(Math.max(getProbability(state.hmcX, state.hmcY), 0.001)) + 0.5 * (state.hmcVx * state.hmcVx + state.hmcVy * state.hmcVy) / 1000;
+                    const newE = -Math.log(Math.max(getProbability(state.hmcTrajectoryX, state.hmcTrajectoryY), 0.001)) + 0.5 * (state.hmcVx * state.hmcVx + state.hmcVy * state.hmcVy) / 1000;
+                    const accProb = Math.min(1, Math.exp(curE - newE)); const accepted = Math.random() < accProb;
+
+                    if (state.currentMode === 'debug') {
+                        const g = getGradient(state.hmcTrajectoryX, state.hmcTrajectoryY);
+                        updateHMCThinking(state.hmcTrajectoryX, state.hmcTrajectoryY, state.hmcVx, state.hmcVy, g.dx, g.dy, newE, accProb, L, L);
+                        drawTrajectoryPreview(proposedPath, { x: state.hmcX, y: state.hmcY }, { x: state.hmcTrajectoryX, y: state.hmcTrajectoryY }, accepted);
+                    }
+
+                    if (accepted) {
+                        state.hmcX = state.hmcTrajectoryX; state.hmcY = state.hmcTrajectoryY;
+                        state.hmcPath.push({ x: state.hmcX, y: state.hmcY });
+                        state.hmcStats.accepted++;
+                        const val = getProbability(state.hmcX, state.hmcY);
+                        if (val > 0.5) { state.hmcStats.highValueSamples++; if (state.currentMode === 'game' && val > 0.8) { state.hmcStats.treasures++; updateGameStats(); } }
+                    }
+                    state.hmcStats.samples++; state.hmcStep = 0;
+                }
+
+                redrawCanvas(state.hmcCtx, state.hmcPath, state.hmcX, state.hmcY, '#4ecdc4'); updateStatistics();
+            }, Math.max(50, 200 - speed * 8));
+        }
+
+        // ----------- Controls -----------
+        function startBoth() { startRandomWalk(); startHMC(); }
+        function resetDemo() {
+            if (state.rwAnimation) { clearInterval(state.rwAnimation); state.rwAnimation = null; }
+            if (state.hmcAnimation) { clearInterval(state.hmcAnimation); state.hmcAnimation = null; }
+            if (state.chartUpdateInterval) { clearInterval(state.chartUpdateInterval); state.chartUpdateInterval = null; }
+            state.rwX = 200; state.rwY = 200; state.hmcX = 200; state.hmcY = 200;
+            state.rwPath = []; state.hmcPath = [];
+            state.hmcVx = 0; state.hmcVy = 0; state.hmcStep = 0; state.hmcTrajectoryX = 200; state.hmcTrajectoryY = 200;
+            state.rwStats = { samples: 0, accepted: 0, highValueSamples: 0, treasures: 0 };
+            state.hmcStats = { samples: 0, accepted: 0, highValueSamples: 0, treasures: 0 };
+            // Reset chart data
+            state.chartData = {
+                convergenceRW: [], convergenceHMC: [],
+                efficiencyRW: [], efficiencyHMC: [],
+                acceptanceRW: [], acceptanceHMC: [],
+                energyRW: [], energyHMC: [],
+                treasureTimeRW: [], treasureTimeHMC: [],
+                startTime: Date.now()
+            };
+            drawInitialState(); updateStatistics(); updateGameStats();
+            const wd = document.getElementById('winner-display'); if (wd) { wd.textContent = 'Ready to Start!'; wd.style.color = '#fff'; }
+            if (state.currentMode === 'debug') initTrajectoryCanvas();
+            if (state.currentMode === 'python') initializeCharts();
+        }
+
+        function updateStatistics() {
+            document.getElementById('rwSamples').textContent = state.rwStats.samples;
+            document.getElementById('hmcSamples').textContent = state.hmcStats.samples;
+            const rwEff = state.rwStats.samples > 0 ? Math.round(100 * state.rwStats.highValueSamples / state.rwStats.samples) : 0;
+            const hmcEff = state.hmcStats.samples > 0 ? Math.round(100 * state.hmcStats.highValueSamples / state.hmcStats.samples) : 0;
+            document.getElementById('rwEfficiency').textContent = rwEff + '%';
+            document.getElementById('hmcEfficiency').textContent = hmcEff + '%';
+            document.getElementById('rw-efficiency-bar').style.width = rwEff + '%';
+            document.getElementById('hmc-efficiency-bar').style.width = hmcEff + '%';
+            updateWinnerDisplay(rwEff, hmcEff);
+        }
+        function updateWinnerDisplay(rwEff, hmcEff) {
+            const el = document.getElementById('winner-display'); if (!el) return;
+            if (state.currentMode === 'game') {
+                if (state.rwStats.treasures >= 10) { el.textContent = 'Random Walk Wins!'; el.style.color = '#ff6b6b'; }
+                else if (state.hmcStats.treasures >= 10) { el.textContent = 'HMC Wins!'; el.style.color = '#4ecdc4'; }
+                else if (state.rwStats.samples > 0 || state.hmcStats.samples > 0) {
+                    const r = state.rwStats.treasures, h = state.hmcStats.treasures;
+                    if (r > h) { el.textContent = 'Random Walk Leading!'; el.style.color = '#ff6b6b'; }
+                    else if (h > r) { el.textContent = 'HMC Leading!'; el.style.color = '#4ecdc4'; }
+                    else { el.textContent = 'Tied Game!'; el.style.color = '#fff'; }
+                }
+            } else {
+                if (state.rwStats.samples > 100 && state.hmcStats.samples > 100) {
+                    if (hmcEff > rwEff + 5) { el.textContent = 'HMC is More Efficient!'; el.style.color = '#4ecdc4'; }
+                    else if (rwEff > hmcEff + 5) { el.textContent = 'Random Walk is More Efficient!'; el.style.color = '#ff6b6b'; }
+                    else { el.textContent = 'Close Competition!'; el.style.color = '#fff'; }
+                } else if (state.rwStats.samples > 0 || state.hmcStats.samples > 0) {
+                    el.textContent = 'Sampling in Progress...'; el.style.color = '#fff';
+                } else { el.textContent = 'Ready to Start!'; el.style.color = '#fff'; }
+            }
+        }
+        function updateGameStats() {
+            if (state.currentMode !== 'game') return;
+            document.getElementById('rw-treasures').textContent = state.rwStats.treasures;
+            document.getElementById('hmc-treasures').textContent = state.hmcStats.treasures;
+            if (state.rwStats.treasures >= 10 || state.hmcStats.treasures >= 10) {
+                if (state.rwAnimation) { clearInterval(state.rwAnimation); state.rwAnimation = null; }
+                if (state.hmcAnimation) { clearInterval(state.hmcAnimation); state.hmcAnimation = null; }
+            }
+        }
+    </script>
+</body>
+</html>
